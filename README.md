@@ -2,6 +2,8 @@
 
 A calm, local-first typing application built with React 19, TypeScript and Vite. This application lives beside the original Designer starter projects; no existing CAD files or workflows were replaced.
 
+**Live:** [exoticmushboom101.github.io/flowtype](https://exoticmushboom101.github.io/flowtype/) · **Source:** [github.com/ExoticMushboom101/flowtype](https://github.com/ExoticMushboom101/flowtype)
+
 ## Run
 
 Use Node.js 22.12+ (developed and checked with Node 24) and npm.
@@ -24,7 +26,20 @@ npm run build
 npm run preview
 ```
 
-Browser tests use a locally installed Google Chrome through Playwright. They do not require a downloaded Chromium bundle. `npm run preview` serves the production build at http://localhost:4173. Deploy the generated output to a static host at the domain root. Hash routing means server-side route rewrites are unnecessary. Use HTTPS in production for clipboard support.
+Browser tests use a locally installed Google Chrome through Playwright. They do not require a downloaded Chromium bundle. `npm run preview` serves the production build at http://localhost:4173. Hash routing means server-side route rewrites are unnecessary. Use HTTPS in production for clipboard support.
+
+## Deployment
+
+Every push to `main` runs the [Pages workflow](.github/workflows/deploy.yml). It installs dependencies with `npm ci`, then runs type checking, ESLint and the unit tests. It builds and publishes the result to GitHub Pages, and a failing check blocks the deploy. Browser (Playwright) tests stay local because they use an installed Chrome.
+
+GitHub Pages serves this project from `/<repository>/`. The workflow therefore sets `BASE_PATH` from the repository name, and [Vite config](vite.config.ts) applies it to every asset URL. Local development and root-domain hosts keep the default `/`. To reproduce the Pages build locally:
+
+```sh
+BASE_PATH=/flowtype/ npm run build
+BASE_PATH=/flowtype/ npx vite preview   # http://localhost:4173/flowtype/
+```
+
+Each browser keeps its own settings and history. Data saved on `localhost` doesn't carry over to the deployed site or other devices.
 
 ## What works
 
