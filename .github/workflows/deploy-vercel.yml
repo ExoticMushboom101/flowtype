@@ -52,7 +52,17 @@ jobs:
         id: deployment
         shell: bash
         run: |
-          url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          # Deploy only the verified output, outside the Git checkout. Otherwise
+          # the CLI asks the expired Vercel GitHub connection to validate commit
+          # authors, despite this workflow authenticating with the owner's token.
+          # Preserve source provenance as ordinary deployment metadata instead.
+          deploy_dir="$RUNNER_TEMP/flowtype-production"
+          mkdir -p "$deploy_dir/.vercel"
+          cp .vercel/project.json "$deploy_dir/.vercel/project.json"
+          cp -R .vercel/output "$deploy_dir/.vercel/output"
+          url=$(vercel deploy "$deploy_dir" --prebuilt --prod --token="$VERCEL_TOKEN" \
+            --meta sourceRepository="$GITHUB_REPOSITORY" \
+            --meta sourceCommit="$GITHUB_SHA")
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "### FlowType deployment" >> "$GITHUB_STEP_SUMMARY"
           echo "[$url]($url)" >> "$GITHUB_STEP_SUMMARY"
