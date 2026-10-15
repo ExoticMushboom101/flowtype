@@ -2,7 +2,7 @@
 
 A calm, local-first typing application built with React 19, TypeScript and Vite. This application lives beside the original Designer starter projects; no existing CAD files or workflows were replaced.
 
-**Live:** [exoticmushboom101.github.io/flowtype](https://exoticmushboom101.github.io/flowtype/) · **Source:** [github.com/ExoticMushboom101/flowtype](https://github.com/ExoticMushboom101/flowtype)
+**Live on Vercel:** [flowtype-sigma.vercel.app](https://flowtype-sigma.vercel.app/) · **GitHub Pages:** [exoticmushboom101.github.io/flowtype](https://exoticmushboom101.github.io/flowtype/) · **Source:** [github.com/ExoticMushboom101/flowtype](https://github.com/ExoticMushboom101/flowtype)
 
 ## Run
 
@@ -29,6 +29,22 @@ npm run preview
 Browser tests use a locally installed Google Chrome through Playwright. They do not require a downloaded Chromium bundle. `npm run preview` serves the production build at http://localhost:4173. Hash routing means server-side route rewrites are unnecessary. Use HTTPS in production for clipboard support.
 
 ## Deployment
+
+### Vercel (production)
+
+Every push to `main` runs the [Vercel deployment workflow](.github/workflows/deploy-vercel.yml). GitHub Actions checks out this repository, installs with `npm ci`, runs type checking, lint and all unit tests, builds with Vercel CLI 64.2.0, and publishes the prebuilt output to production. The public URL is [flowtype-sigma.vercel.app](https://flowtype-sigma.vercel.app/). It serves the app from `/`, not the Pages `/flowtype/` prefix.
+
+This uses GitHub Actions rather than Vercel's GitHub App: the account's saved Vercel-to-GitHub credential returned `Bad credentials` during setup. Git-based automatic production updates still work through the workflow. The project is public without a Vercel login; only this project's deployment protection was disabled.
+
+Authentication is the encrypted repository secret `VERCEL_TOKEN`; the non-secret project identifiers are repository variables `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`. No token is committed. To rotate the deployment credential, replace the repository secret in GitHub Settings → Secrets and variables → Actions, then revoke the old token in Vercel. Keep local Vercel settings and downloaded environment files out of git (the ignore rules cover them).
+
+The initial production deploy passed its checks and a live Chrome smoke test: HTTP 200, fonts and artwork loaded, typing completed, results persisted after reload, no mobile horizontal overflow at 390×844, and no browser/network errors. Real live-site captures:
+
+- [Desktop](artifacts/deployment/vercel-desktop.png)
+- [Completed test](artifacts/deployment/vercel-results.png)
+- [Mobile](artifacts/deployment/vercel-mobile.png)
+
+### GitHub Pages (retained)
 
 Every push to `main` runs the [Pages workflow](.github/workflows/deploy.yml). It installs dependencies with `npm ci`, then runs type checking, ESLint and the unit tests. It builds and publishes the result to GitHub Pages, and a failing check blocks the deploy. Browser (Playwright) tests stay local because they use an installed Chrome.
 
