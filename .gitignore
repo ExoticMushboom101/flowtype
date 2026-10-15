@@ -5,3 +5,6 @@ test-results/
 *.log
 *.tsbuildinfo
 .DS_Store
+# Vercel project settings, downloaded environment variables and build cache.
+.vercel/
+.env*.local
