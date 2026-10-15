@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="700" viewBox="0 0 1800 700">
+<!-- Original FlowType illustration: layered alpine ridges, sunrise haze, and a still lake. No external imagery. -->
+<defs>
+<linearGradient id="sky" x2="0" y2="1"><stop stop-color="#f8f5e9"/><stop offset=".48" stop-color="#e5c8af"/><stop offset="1" stop-color="#a5b6aa"/></linearGradient>
+<radialGradient id="sun"><stop stop-color="#fff7db" stop-opacity=".9"/><stop offset="1" stop-color="#efd1ae" stop-opacity="0"/></radialGradient>
+<linearGradient id="far" x2="0" y2="1"><stop stop-color="#a4b7ad"/><stop offset="1" stop-color="#c6cabe"/></linearGradient>
+<linearGradient id="mid" x2="0" y2="1"><stop stop-color="#6e938b"/><stop offset="1" stop-color="#a9b9aa"/></linearGradient>
+<linearGradient id="near" x2="0" y2="1"><stop stop-color="#3d7169"/><stop offset="1" stop-color="#76928a"/></linearGradient>
+<linearGradient id="lake" x2="0" y2="1"><stop stop-color="#bac6b9"/><stop offset=".4" stop-color="#c4cec1"/><stop offset="1" stop-color="#9aaea4"/></linearGradient>
+<linearGradient id="reflection" x2="0" y2="1"><stop stop-color="#ecd9b7" stop-opacity=".65"/><stop offset="1" stop-color="#e4d8bc" stop-opacity="0"/></linearGradient>
+<linearGradient id="mist" x2="0" y2="1"><stop stop-color="#e9e3cc" stop-opacity="0"/><stop offset=".7" stop-color="#e9e3cc" stop-opacity=".5"/><stop offset="1" stop-color="#e9e3cc" stop-opacity="0"/></linearGradient>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".055"/></feComponentTransfer><feBlend in="SourceGraphic" mode="soft-light"/></filter>
+</defs>
+<g filter="url(#grain)">
+<path fill="url(#sky)" d="M0 0h1800v700H0z"/>
+<ellipse cx="1120" cy="228" rx="550" ry="310" fill="url(#sun)"/>
+<circle cx="1120" cy="240" r="38" fill="#f6e5c3" opacity=".65"/>
+<path d="M0 314 76 287 148 305 239 246 306 275 423 174 461 204 495 187 579 267 652 238 741 311 859 227 922 263 1038 211 1100 261 1178 206 1240 267 1326 231 1408 284 1518 226 1600 289 1710 243 1800 294v221H0Z" fill="url(#far)"/>
+<path d="m390 215 33-41 38 30 34-17 53 51-51-32-30 18-40-23Z" fill="#e5e4d8" opacity=".4"/>
+<path d="M0 259 73 276 124 253 204 300 262 293 331 326 427 304 524 362 616 335 703 367 796 305 853 320 937 284 982 316 1027 296 1142 364 1210 332 1287 301 1359 316 1447 270 1480 302 1517 286 1601 340 1684 323 1800 271v275H0Z" fill="url(#mid)"/>
+<path d="M0 336 94 300 155 334 216 326 299 383 367 357 460 405 546 385 652 418 762 388 830 414 920 390 1008 417 1129 384 1217 412 1325 373 1412 387 1518 345 1586 362 1702 303 1800 324v234H0Z" fill="#91aaa0" opacity=".65"/>
+<path d="M0 307 65 329 105 318 166 364 220 353 280 397 341 385 400 426 458 420 507 450 633 463 733 480H0Z" fill="url(#near)"/>
+<path d="M1800 319 1764 327 1717 313 1661 354 1636 342 1567 387 1519 383 1453 417 1398 408 1344 446 1246 452 1113 480h687Z" fill="url(#near)"/>
+<path d="M0 457Q454 462 900 452t900 5v243H0Z" fill="url(#lake)"/>
+<path d="m1101 455-72 245h220l-90-245Z" fill="url(#reflection)"/>
+<path d="M0 446q480 35 900 3t900-3v62q-480-33-900-1T0 493Z" fill="url(#mist)"/>
+<g fill="none" stroke="#eff0df" stroke-width="1" opacity=".4"><path d="M200 499h289m142-3h100m471 4h333M514 537h278m240 6h274m-889 24h169m329 7h170m-301 37h420M100 632h371m692-12h344m-665 36h257"/></g>
+<path d="M0 615q105-32 209-13l115 56-153 42H0Z" fill="#4f7569" opacity=".7"/>
+<path d="M1800 591q-83 18-146 57l-131 52h277Z" fill="#476d63" opacity=".7"/>
+<g fill="#315c50" opacity=".75"><path d="m50 613 9-63 10 63h-7v12h-5v-12ZM85 611l13-82 12 82h-9v13h-5v-13ZM124 615l9-62 10 62h-7v12h-5v-12ZM1770 612l10-71 11 71h-8v12h-5v-12Z"/></g>
+</g></svg>
