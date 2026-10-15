@@ -12,7 +12,12 @@ export function LiveStats({
   duration: number;
 }) {
   const ready = state.status === "ready";
-  const progress = timed ? state.remaining / (duration * 1000) : 1;
+  // Timed: the ring drains with the remaining time. Finite passages have no
+  // deadline, so the ring drains with the share of the passage still to type.
+  const length = Array.from(state.text).length || 1;
+  const progress = timed
+    ? state.remaining / (duration * 1000)
+    : 1 - Math.min(1, Array.from(state.input).length / length);
   return (
     <div className="live-stats" aria-label="Live typing statistics">
       <div className="stat-card">

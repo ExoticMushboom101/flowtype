@@ -30,12 +30,15 @@ await page.getByRole("button", { name: "15 seconds", exact: true }).click();
 const input = page.getByRole("textbox", { name: "Typing input" });
 const passage = (await page.locator("#target-passage").textContent()) ?? "";
 await input.focus();
-for (let i = 0; i < 15; i++) {
-  if (!(await input.count())) break;
-  await input.pressSequentially(passage.slice(i * 6, (i + 1) * 6));
+const finished = page.getByRole("heading", { name: "A moment of progress." });
+// Real time: the 15 s test can end mid-chunk, so type via the keyboard (not the
+// textarea locator, which detaches) and stop once results appear.
+for (let i = 0; i < 20; i++) {
+  if (await finished.count()) break;
+  await page.keyboard.type(passage.slice(i * 6, (i + 1) * 6));
   await page.waitForTimeout(1000);
 }
-await page.getByRole("heading", { name: "A moment of progress." }).waitFor();
+await finished.waitFor();
 await capture("results-desktop");
 await page.getByRole("button", { name: /View stats/ }).click();
 await capture("stats-desktop");

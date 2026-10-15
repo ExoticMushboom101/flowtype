@@ -3,10 +3,11 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
-import { ChevronDown, RotateCcw, Sparkles } from "lucide-react";
+import { ChevronDown, CornerDownLeft, RotateCcw, Shuffle, Sparkles } from "lucide-react";
 import type { Settings, TestConfig, TestResult } from "../types";
 import { useTypingTest } from "../hooks/useTypingTest";
 import { TestControls } from "../components/typing/TestControls";
@@ -14,15 +15,21 @@ import { TypingArea } from "../components/typing/TypingArea";
 import { LiveStats } from "../components/typing/LiveStats";
 import { ResultsView } from "../components/results/ResultsView";
 import { playErrorSound } from "../lib/sound";
+import { selectQuote } from "../lib/textGenerator";
+import { finePointer, isIdleTarget, redirectable } from "../lib/focus";
 export interface PracticeHandle {
   restart: () => void;
+  focus: () => void;
 }
 export const PracticePage = forwardRef<
   PracticeHandle,
   {
     config: TestConfig;
     settings: Settings;
+    /** True when this mount replaces a practice page after a configuration change. */
+    focusOnMount: boolean;
     updateConfig: (patch: Partial<TestConfig>) => void;
+    newPassage: () => void;
     onComplete: (result: TestResult) => void;
     setRunning: (running: boolean) => void;
     openWords: () => void;
@@ -33,7 +40,9 @@ export const PracticePage = forwardRef<
   {
     config,
     settings,
+    focusOnMount,
     updateConfig,
+    newPassage,
     onComplete,
     setRunning,
     openWords,
@@ -53,7 +62,10 @@ export const PracticePage = forwardRef<
     },
     [onComplete],
   );
-  const { state, input, restart, timed } = useTypingTest(config, complete);
+  const { state, input, restart, timed, awaitingSubmit } = useTypingTest(
+    config,
+    complete,
+  );
   const soundEnabled = useRef(settings.sound);
   soundEnabled.current = settings.sound;
   const type = useCallback(
@@ -62,26 +74,63 @@ export const PracticePage = forwardRef<
     },
     [input],
   );
+  const focusInput = useCallback(
+    () => inputRef.current?.focus({ preventScroll: true }),
+    [],
+  );
   const reset = useCallback(() => {
     setResult(null);
     restart();
     setFocusRequest((n) => n + 1);
   }, [restart]);
-  useImperativeHandle(ref, () => ({ restart: reset }), [reset]);
+  useImperativeHandle(ref, () => ({ restart: reset, focus: focusInput }), [
+    reset,
+    focusInput,
+  ]);
   useEffect(() => {
     setRunning(state.status === "running");
     return () => setRunning(false);
   }, [state.status, setRunning]);
+  // A configuration change remounts this page and removes the clicked control,
+  // dropping focus to <body>. Return it to the passage so typing can continue.
+  // First load and page navigation leave focus alone (the redirect below still
+  // lets the first keystroke start typing).
+  useLayoutEffect(() => {
+    if (focusOnMount && finePointer() && isIdleTarget(document.activeElement))
+      focusInput();
+  }, [focusOnMount, focusInput]);
+  // Keyboard-first: a printable key pressed while nothing is focused starts typing.
+  // Focusing during keydown lets the browser deliver the character to the textarea.
+  useEffect(() => {
+    const redirect = (e: KeyboardEvent) => {
+      if (
+        e.defaultPrevented ||
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        e.key.length !== 1 ||
+        // Space keeps its native meaning: scroll the page or press a button.
+        e.key === " " ||
+        !redirectable(e.target) ||
+        document.querySelector("dialog[open]")
+      )
+        return;
+      focusInput();
+    };
+    window.addEventListener("keydown", redirect);
+    return () => window.removeEventListener("keydown", redirect);
+  }, [focusInput]);
   if (result && state.status === "completed")
     return (
       <ResultsView
         result={result}
         retry={reset}
-        back={reset}
+        back={newPassage}
         stats={openStats}
       />
     );
   const finiteWordCount = state.text.trim().split(/\s+/).length;
+  const quote = config.source === "quote" ? selectQuote(config.seed) : null;
   return (
     <>
       <div className="hero">
@@ -106,7 +155,7 @@ export const PracticePage = forwardRef<
             {config.source === "passage"
               ? config.category
               : config.source === "quote"
-                ? "quote practice"
+                ? quote?.author
                 : "your words"}
             <ChevronDown size={11} />
           </button>
@@ -117,6 +166,10 @@ export const PracticePage = forwardRef<
             {state.status === "ready" ? (
               <>
                 <Sparkles size={11} /> Begin typing to start
+              </>
+            ) : awaitingSubmit ? (
+              <>
+                <CornerDownLeft size={11} /> Space to finish · backspace to fix
               </>
             ) : timed ? (
               "In your flow · changing mode resets this attempt"
@@ -149,6 +202,16 @@ export const PracticePage = forwardRef<
           >
             <RotateCcw size={17} />
           </button>
+          {config.source !== "custom" && (
+            <button
+              className="restart-button"
+              onClick={newPassage}
+              aria-label={config.source === "quote" ? "Next quote" : "Next passage"}
+              title={config.source === "quote" ? "Next quote" : "Next passage"}
+            >
+              <Shuffle size={16} />
+            </button>
+          )}
           <span className="sr-only" role="status">
             {state.status === "running" && !focused
               ? "Test is running. The timer continues while unfocused."
@@ -164,7 +227,13 @@ export const PracticePage = forwardRef<
             <kbd>esc</kbd> command menu
           </button>
         </div>
-        <p className="practice-footnote">Progress, not perfection.</p>
+        {quote?.source ? (
+          <p className="practice-footnote">
+            {quote.author}, <cite>{quote.source}</cite> · public domain
+          </p>
+        ) : (
+          <p className="practice-footnote">Progress, not perfection.</p>
+        )}
       </section>
     </>
   );

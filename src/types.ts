@@ -18,6 +18,9 @@ export interface TestConfig {
   punctuation: boolean;
   numbers: boolean;
   customText: string;
+  /** Selects the passage/quote in [0, 1). Shared by Words preview and Practice so the
+   *  previewed text is exactly what will be typed. Re-rolled once per app load. */
+  seed: number;
 }
 export interface Settings {
   theme: Theme;

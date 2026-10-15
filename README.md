@@ -43,14 +43,15 @@ Each browser keeps its own settings and history. Data saved on `localhost` doesn
 
 ## What works
 
-- **Practice:** 15/30/60/120-second runs and 10/25/50/100-word runs, independent punctuation/number options, original quotes, and custom text.
+- **Practice:** 15/30/60/120-second runs and 10/25/50/100-word runs, independent punctuation/number options, original and public-domain quotes with attribution, custom text, and a next-passage button.
 - **Typing:** per-character correctness, underlined errors, backspace correction, IME composition, Unicode code-point comparison, preserved repeated spaces and newlines, mobile input, and a cursor that follows wrapped text.
-- **Keyboard:** while typing, Tab focuses the restart button and Enter activates it without a custom global Tab handler. Escape opens searchable commands; arrows/Enter select and Escape closes. Normal inputs and editable fields are not intercepted.
-- **Results:** real net/raw WPM, final-input accuracy, lifetime error attempts, current mismatches, corrected errors, consistency, actual time-series data, copy results, retry, and navigation.
+- **Keyboard:** typing a letter with nothing focused (or with a button or link focused) starts the test, so no click is needed. Changing the test configuration returns focus to the passage. While typing, Tab focuses the restart button and Enter activates it, with no custom global Tab handler. Escape opens searchable commands (restart, next passage, durations, word counts, punctuation, numbers, quote mode, every theme, and every page). Arrow keys, Home/End and Enter select; Escape closes. Inputs, selects, textareas and editable fields are never intercepted. A navbar button opens the same menu for pointer and touch users.
+- **Results:** real net/raw WPM, final-input accuracy, lifetime error attempts, current mismatches, corrected errors, consistency, actual time-series data, copy results, and a short local motivational line. Try again repeats the same passage; Back to practice loads the next one.
 - **Stats:** up to 200 locally stored attempts, personal best and averages, recent trend, inspectable attempt details, and confirmed history clearing.
-- **Words:** seven categories, quote practice, custom text validation and preview, automatic local draft saving, and configuration reflected in Practice.
+- **Words:** seven categories, quote practice, custom text validation, and automatic local draft saving. The "Up next" preview shows exactly the text Practice will load, because both use the same passage seed, and it can be shuffled.
 - **Settings:** five complete semantic palettes, local fonts, font-size control, three font choices, three cursor styles, live WPM/timer visibility, error audio, smooth cursor, landscape visibility, and confirmed preference reset.
-- **Resilience:** validated local data, quota/blocked-storage warnings, in-memory results when saving fails, missing-image fallback, background-tab deadline catch-up, reduced motion, modal focus containment, route-leaving confirmation, reload warning during active tests, and a root error boundary.
+- **Atmosphere:** an original sunrise landscape for the light palettes, and a separately painted night scene with moon and stars for Dark. The leaf-and-river logo is an inline SVG that recolors with every theme.
+- **Resilience:** validated local data, quota/blocked-storage warnings, in-memory results when saving fails, missing-image fallback per scene, background-tab deadline catch-up, reduced motion, modal focus containment, route-leaving confirmation, reload warning during active tests, and a root error boundary. Result IDs work on plain-HTTP LAN addresses, where `crypto.randomUUID` is unavailable.
 
 ## Architecture
 
@@ -79,21 +80,23 @@ Practice owns its fast-changing engine snapshot so typing does not re-render the
 - Raw WPM = all current code points, including mismatches / 5 / elapsed minutes. Deleted characters are not included in either speed.
 - Accuracy = correct / total current input. Before input, accuracy is 100%. After correction, the removed mismatch no longer lowers accuracy.
 - Every newly entered mismatch counts individually as an incorrect keystroke. Removing a mismatch increases corrected errors. The current mismatch count is tracked independently.
-- Word tests end on the final character, with no trailing space required. Errors are allowed to remain and lower accuracy. Quotes and custom text are always finite, regardless of the previous timed-mode selection.
+- Word, quote and custom tests end at a word boundary. Typing the final character correctly finishes immediately, with no trailing space needed. If the final character is wrong, the run waits ("Space to finish · backspace to fix"). Space or Enter submits with the error; Backspace allows a correction first. Other keys past the end are ignored. Errors earlier in the passage can remain and lower accuracy. Quotes and custom text are always finite, regardless of the previous timed-mode selection.
+- The finite-mode ring shows the share of the passage still to type; the timed ring shows remaining time.
 - Timed tests finish at the configured deadline. An input event arriving exactly at or after the deadline is not accepted. A timed passage extends if a very fast typist exhausts the bank.
 - Samples represent actual observed cumulative speed about once a second; throttled gaps never generate fake intermediate points. Consistency is `clamp(100 × (1 − standard deviation / mean), 0, 100)` of full one-second correct-character speed windows. Partial final windows and missed multi-second windows are excluded. Fewer than three valid windows displays an em dash.
-- Changing test configuration deliberately creates a fresh ready attempt. Changing appearance does not reset a running test. Retry preserves the configuration and passage and restores typing focus.
+- Changing test configuration deliberately creates a fresh ready attempt. Changing appearance does not reset a running test. Retry preserves the configuration and passage and restores typing focus. "Next passage" steps through the library in order, so the new text always differs from the current one. A fresh seed is chosen on each app load.
+- Preference reset restores appearance and test defaults but keeps the user's custom passage and draft.
 - Navigating away from a running test asks for confirmation; unfinished attempts are not saved. Reload closes the active attempt but preserves completed history and preferences. Reloading results returns to a fresh practice screen; the completed attempt remains in Stats.
 - Custom text is trimmed at its outer edges, CRLF is normalized to LF, tabs become four spaces, and non-printable controls are removed. Interior spaces/newlines remain intact. Source text is not retained inside historical records; the selected text and draft are only local preferences. Do not put secrets into practice text on shared devices.
 - Paste/drop and undo are disabled in the test, but remain available in custom-text editing. Backspace and native word-backspace work from the end of the typing buffer. Arrow navigation does not move the append/correct typing position.
 
 ## Verification
 
-The repository includes 24 unit tests and 16 Chrome browser tests, including:
+The repository includes 32 unit tests and 21 Chrome browser tests, including:
 
-- State transitions, first input, correct/incorrect characters, corrections, metrics, exact timer expiry, word boundaries, restart, background throttling, Unicode/whitespace and text validation.
-- Preferences/history round trips, malformed data, blocked storage, deduplication and the history limit.
-- Keyboard-only restart, real results/history, command search, theme changes during a run, navigation protection, custom-text draft recovery and IME commit behavior.
+- State transitions, first input, correct/incorrect characters, corrections, net/raw metrics, exact timer expiry, word-boundary submission and correction of a wrong final character, restart, background throttling, Unicode/whitespace, text validation, deterministic seeds, next passage/quote cycling, and ID fallback without `randomUUID`.
+- Preferences/history round trips, seed validation, compact sample storage, malformed data, blocked storage, deduplication and the history limit.
+- Keyboard-only restart, typing with nothing focused, focus return after a configuration change, real results/history, command search across themes and word counts, the night landscape, Words preview matching Practice, preference reset keeping custom text, theme changes during a run, navigation protection, custom-text draft recovery and IME commit behavior.
 - All four pages at 1440×900, 1280×800, 768×1024, 390×844 and 320×640 with no page-level horizontal overflow.
 - Automated axe WCAG A/AA checks on every page in every theme, mobile practice in every theme, the command menu and real completed results. These are automated checks, not a substitute for manual assistive-technology testing.
 
@@ -113,6 +116,6 @@ node scripts/verify-visuals.mjs
 
 ## Assets, privacy and boundaries
 
-The [landscape](public/landscape.svg), favicon, prose and quotes are original FlowType assets. Inter and JetBrains Mono are bundled locally through Fontsource; their SIL OFL license notices ship in the [font license file](public/font-licenses.txt). Lucide supplies icons. There is no analytics, authentication or cross-device synchronization. Storage belongs to the browser origin; private browsing, clearing site data or changing ports may change what is available.
+The [sunrise landscape](public/landscape.svg), [night landscape](public/landscape-night.svg), logo, favicon and prose are original FlowType assets. Quotes are either original "FlowType notes" or short public-domain excerpts (Thoreau's *Walden*, 1854; Emerson's *Nature*, 1836; Muir's *Our National Parks*, 1901). Each excerpt is attributed in the app, and its wording was checked against Project Gutenberg / Digital Thoreau editions. Inter and JetBrains Mono are bundled locally through Fontsource; their SIL OFL license notices ship in the [font license file](public/font-licenses.txt). Lucide supplies icons. There is no analytics, authentication or cross-device synchronization. Storage belongs to the browser origin; private browsing, clearing site data or changing ports may change what is available.
 
-This is a client-side application, not a deployed hosted service. Browser automation was performed in desktop Chrome with responsive viewport emulation; actual iOS/Android keyboards, Safari, Firefox and manual screen-reader interaction have not been certified. Ordinary vertical scrolling on short mobile screens is intentional. Clipboard and optional audio gracefully degrade when the browser blocks them.
+This is a static client-side application with no server component. Browser automation was performed in desktop Chrome with responsive viewport emulation; actual iOS/Android keyboards, Safari, Firefox and manual screen-reader interaction have not been certified. Ordinary vertical scrolling on short mobile screens is intentional. Clipboard and optional audio gracefully degrade when the browser blocks them.

@@ -2,28 +2,30 @@
    Untyped characters are quieter at desktop sizes; mobile uses --muted. */
 :root,
 [data-theme="light"] {
-  color-scheme: light;
-  --bg: #f7f7f0;
-  --surface: #ffffff;
-  --secondary: #e9efe6;
-  --text: #203b32;
-  --muted: #5c6c61;
-  --untyped: #7c8b80;
-  --accent: #2d7255;
-  --accent-hover: #245e46;
-  --accent-soft: #e6eee4;
-  --error: #b44d48;
-  --border: #e1e6dd;
-  --control-bg: #f3f4ed;
-  --hover: #e9eee4;
-  --card-bg: #ffffffc9;
-  --card-border: #e4e8dfb0;
-  --sunrise: #d9a16d;
-  --shadow: 0 20px 80px #203b3215;
-  --landscape-filter: none;
-  --landscape-opacity: 0.9;
-  --landscape-fallback: #afc2ad;
-  --footer-text: #304f40;
+  /* The default palette is now dark, so native controls (scrollbars, select
+     menus, range track) must render dark too. */
+  color-scheme: dark;
+  --bg: #09090B;
+  --surface: #18181B;
+  --secondary: #202024;
+  --text: #F4F4F5;
+  --muted: #A1A1AA;
+  --untyped: #71717A;
+  --accent: #8B5CF6;
+  --accent-hover: #7C3AED;
+  --accent-soft: #2E1F4D;
+  --error: #F87171;
+  --border: #303036;
+  --control-bg: #151518;
+  --hover: #27272A;
+  --card-bg: #18181BE6;
+  --card-border: #3F3F4690;
+  --sunrise: #A78BFA;
+  --shadow: 0 20px 80px #00000080;
+  --landscape-filter: grayscale(70%) brightness(0.55);
+  --landscape-opacity: 0.75;
+  --landscape-fallback: #27272A;
+  --footer-text: #C4B5FD;
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -44,8 +46,9 @@
   --card-border: #34443eb0;
   --sunrise: #d3ae85;
   --shadow: 0 20px 80px #0006;
-  --landscape-filter: brightness(0.4) saturate(0.65) hue-rotate(14deg);
-  --landscape-opacity: 0.7;
+  /* Dark has its own night painting (landscape-night.svg); no filter needed. */
+  --landscape-filter: none;
+  --landscape-opacity: 0.95;
   --landscape-fallback: #233c36;
   --footer-text: #c0d3c8;
 }

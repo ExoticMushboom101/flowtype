@@ -1,8 +1,15 @@
 import { ArrowRight, Check, Copy, RotateCcw, Sprout } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { TestResult } from "../../types";
+import { motivations } from "../../data/passages";
 import { Button, PageHeading } from "../common";
 import { WpmChart } from "./WpmChart";
+/** Stable per result (derived from its id), so a re-render never swaps the line. */
+function motivationFor(id: string) {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+  return motivations[Math.abs(hash) % motivations.length];
+}
 export function modeLabel(result: TestResult) {
   return result.config.source === "custom"
     ? "Custom text"
@@ -143,8 +150,7 @@ export function ResultsView({
         </p>
       )}
       <p className="motivation">
-        <Sprout size={16} /> A steady rhythm takes you further than a hurried
-        start.
+        <Sprout size={16} /> {motivationFor(result.id)}
       </p>
       <details className="metric-definitions">
         <summary>How your scores are calculated</summary>
@@ -156,8 +162,9 @@ export function ResultsView({
           Errors can remain when a finite passage ends. Consistency is 100 minus
           the coefficient of variation of complete one-second speed windows,
           clamped to 0–100; it needs at least three windows. The timer continues
-          in background tabs and while commands are open. Quotes and custom
-          passages always finish at the last character.
+          in background tabs and while commands are open. Word, quote and custom
+          tests finish when the last character is typed correctly; if it is
+          wrong, press space to finish with the error or backspace to fix it.
         </p>
       </details>
     </section>

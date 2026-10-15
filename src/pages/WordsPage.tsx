@@ -17,6 +17,7 @@ import { Button, PageHeading, Toggle } from "../components/common";
 import {
   cleanCustomText,
   generateText,
+  selectQuote,
   validateCustomText,
 } from "../lib/textGenerator";
 import { readStorage, writeStorage } from "../lib/storage";
@@ -32,11 +33,13 @@ const icons = {
 export function WordsPage({
   config,
   update,
+  newPassage,
   practice,
   onStorageError,
 }: {
   config: TestConfig;
   update: (patch: Partial<TestConfig>) => void;
+  newPassage: () => void;
   practice: () => void;
   onStorageError: () => void;
 }) {
@@ -48,7 +51,9 @@ export function WordsPage({
   });
   const [error, setError] = useState<string | null>(null),
     [saved, setSaved] = useState(false);
-  const preview = useMemo(() => generateText(config, 0), [config]);
+  // Same config and seed as Practice, so the preview is exactly the next test.
+  const preview = useMemo(() => generateText(config), [config]);
+  const quote = config.source === "quote" ? selectQuote(config.seed) : null;
   const applyCustom = () => {
     const message = validateCustomText(draft);
     setError(message);
@@ -204,25 +209,51 @@ export function WordsPage({
             )}
             <p className="small-note">
               Line breaks and repeated spaces are preserved. Quotes and custom
-              text end at the last character; number and punctuation toggles
-              apply to standard passages.
+              text are finite and end with their last character; number and
+              punctuation toggles apply to standard passages.
             </p>
           </section>
         </div>
         <aside className="preview-panel panel">
-          <div className="preview-label">
-            <span className="status-dot" /> A LITTLE PREVIEW
+          <div className="preview-heading">
+            <div className="preview-label">
+              <span className="status-dot" /> UP NEXT IN PRACTICE
+            </div>
+            {config.source !== "custom" && (
+              <button
+                className="icon-button"
+                onClick={newPassage}
+                aria-label={
+                  config.source === "quote" ? "Preview another quote" : "Preview another passage"
+                }
+                title="Another passage"
+              >
+                <Shuffle size={15} />
+              </button>
+            )}
           </div>
-          <div className="passage-preview">
+          <div className="passage-preview" aria-live="polite">
             {preview.slice(0, 420)}
             {preview.length > 420 ? "…" : ""}
           </div>
+          {quote && (
+            <p className="preview-attribution">
+              — {quote.author}
+              {quote.source && (
+                <>
+                  , <cite>{quote.source}</cite>
+                </>
+              )}
+            </p>
+          )}
           <div className="preview-config">
             <span>
               {config.source === "passage"
                 ? config.category
                 : config.source === "quote"
-                  ? "Original quote"
+                  ? quote?.source
+                    ? "Public-domain quote"
+                    : "Original quote"
                   : "Your custom text"}
             </span>
             <span>

@@ -30,6 +30,7 @@ export default function App() {
     config,
     updateSettings,
     updateConfig,
+    newPassage,
     storageError,
     setStorageError,
   } = usePreferences();
@@ -47,6 +48,18 @@ export default function App() {
   historyRef.current = history;
   const runningRef = useRef(running);
   runningRef.current = running;
+  // The practice page is keyed by its configuration. When that key changes while
+  // Practice is already showing, the remount came from a deliberate config change
+  // and focus should return to the passage; first load and navigation do not.
+  const practiceKey = JSON.stringify(config);
+  const shownPracticeKey = useRef<string | null>(null);
+  const focusPracticeOnMount =
+    page === "practice" &&
+    shownPracticeKey.current !== null &&
+    shownPracticeKey.current !== practiceKey;
+  useEffect(() => {
+    shownPracticeKey.current = page === "practice" ? practiceKey : null;
+  }, [page, practiceKey]);
   const commitNavigation = useCallback((next: Page) => {
     setPage(next);
     setPendingPage(null);
@@ -131,6 +144,10 @@ export default function App() {
     if (pageRef.current === "practice") practiceRef.current?.restart();
     else navigate("practice");
   };
+  const nextPassage = () => {
+    newPassage();
+    if (pageRef.current !== "practice") navigate("practice");
+  };
   return (
     <div className="app">
       <a
@@ -149,6 +166,7 @@ export default function App() {
         navigate={navigate}
         toggleTheme={toggleTheme}
         openProfile={() => setProfile(true)}
+        openCommands={() => setCommands(true)}
       />
       {storageError && (
         <div className="storage-warning" role="status">
@@ -170,11 +188,13 @@ export default function App() {
       >
         {page === "practice" && (
           <PracticePage
-            key={JSON.stringify(config)}
+            key={practiceKey}
             ref={practiceRef}
             config={config}
             settings={settings}
+            focusOnMount={focusPracticeOnMount}
             updateConfig={updateConfig}
+            newPassage={newPassage}
             onComplete={record}
             setRunning={setRunning}
             openWords={() => navigate("words")}
@@ -193,6 +213,7 @@ export default function App() {
           <WordsPage
             config={config}
             update={updateConfig}
+            newPassage={newPassage}
             practice={() => navigate("practice")}
             onStorageError={() => setStorageError(true)}
           />
@@ -203,21 +224,28 @@ export default function App() {
             update={updateSettings}
             reset={() => {
               updateSettings(defaultSettings);
-              updateConfig(defaultConfig);
+              // Test defaults return, but a selected custom passage is the user's
+              // own writing; resetting preferences must not silently discard it.
+              updateConfig({ ...defaultConfig, seed: config.seed, customText: config.customText });
             }}
           />
         )}
       </main>
-      <BackgroundLandscape visible={settings.landscape} />
+      <BackgroundLandscape visible={settings.landscape} theme={settings.theme} />
       <Footer openCommands={() => setCommands(true)} />
       {commands && (
         <CommandMenu
           close={() => setCommands(false)}
           restart={restart}
+          nextPassage={nextPassage}
           update={updateConfig}
           config={config}
           settings={() => navigate("settings")}
+          words={() => navigate("words")}
+          stats={() => navigate("stats")}
           theme={toggleTheme}
+          setTheme={(theme) => updateSettings({ theme })}
+          currentTheme={settings.theme}
         />
       )}{" "}
       {profile && (

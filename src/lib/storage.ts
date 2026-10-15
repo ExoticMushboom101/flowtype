@@ -25,6 +25,7 @@ export const defaultConfig: TestConfig = {
   punctuation: false,
   numbers: false,
   customText: "",
+  seed: 0,
 };
 export function readStorage(key: string): unknown {
   try {
@@ -82,6 +83,13 @@ export function validateConfig(value: unknown): TestConfig {
   if (typeof v.numbers === "boolean") c.numbers = v.numbers;
   if (typeof v.customText === "string")
     c.customText = cleanCustomText(v.customText.slice(0, 10000));
+  if (
+    typeof v.seed === "number" &&
+    Number.isFinite(v.seed) &&
+    v.seed >= 0 &&
+    v.seed < 1
+  )
+    c.seed = v.seed;
   if (c.source === "custom" && !c.customText.trim()) c.source = "passage";
   return c;
 }

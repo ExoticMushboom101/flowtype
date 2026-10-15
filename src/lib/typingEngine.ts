@@ -2,8 +2,12 @@ import type { TestConfig, TestResult, TestState } from "../types";
 import { calculateConsistency, calculateMetrics } from "./typingMetrics";
 
 // Independent of React, clocks, DOM and storage: all transitions accept an injected
-// monotonic timestamp. Wrong characters may be traversed; reaching the final character
-// ends word/quote/custom tests. Deleting a mismatch records a corrected error.
+// monotonic timestamp. Wrong characters may be traversed. Finite (word/quote/custom)
+// tests end at a word boundary: typing the final character correctly finishes at once;
+// if the final character is wrong the run waits, so the user can backspace and fix it
+// or press space/enter to submit with the error. Deleting a mismatch records a
+// corrected error.
+const round = (n: number) => Math.round(n * 100) / 100;
 export class TypingEngine {
   state: TestState;
   private lastSampleSecond = 0;
@@ -18,6 +22,15 @@ export class TypingEngine {
   }
   get timed() {
     return this.config.mode === "time" && this.config.source === "passage";
+  }
+  /** The finite test is at its end but the final character is wrong. */
+  get awaitingSubmit() {
+    if (this.timed || this.state.status !== "running") return false;
+    const target = Array.from(this.state.text),
+      entered = Array.from(this.state.input);
+    return (
+      entered.length === target.length && entered.at(-1) !== target.at(-1)
+    );
   }
   private ready(text: string): TestState {
     return {
@@ -50,6 +63,17 @@ export class TypingEngine {
       };
     }
     const target = Array.from(this.state.text);
+    if (
+      !this.timed &&
+      this.state.status === "running" &&
+      entered.length > target.length &&
+      previous.length === target.length &&
+      /\s/u.test(entered[target.length])
+    ) {
+      // Whitespace after a fully traversed passage is the word-boundary submit.
+      this.finish(now);
+      return this.state;
+    }
     entered = entered.slice(0, target.length);
     if (entered.join("") === this.state.input) return this.state;
     if (!entered.length && this.state.status === "ready") return this.state;
@@ -83,7 +107,12 @@ export class TypingEngine {
       input: value,
       startedAt,
     };
-    if (!this.timed && entered.length === target.length) this.finish(now);
+    if (
+      !this.timed &&
+      entered.length === target.length &&
+      entered.at(-1) === target.at(-1)
+    )
+      this.finish(now);
     return this.state;
   }
   tick(now: number) {
@@ -198,6 +227,7 @@ export class TypingEngine {
       samples,
     } = this.state;
     // Never retain a user's custom passage in history; only its mode and metrics.
+    // Samples are rounded to two decimals so 200 stored tests stay compact.
     return {
       id,
       completedAt,
@@ -212,7 +242,13 @@ export class TypingEngine {
       consistency,
       elapsed,
       config: { ...this.config, customText: "" },
-      samples,
+      samples: samples.map((s) => ({
+        second: round(s.second),
+        wpm: round(s.wpm),
+        raw: round(s.raw),
+        windowWpm: round(s.windowWpm),
+        windowSeconds: s.windowSeconds,
+      })),
     };
   }
 }

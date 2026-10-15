@@ -56,6 +56,22 @@ describe("Resilient local persistence", () => {
     writeStorage(CONFIG_KEY, c);
     expect(validateConfig(readStorage(CONFIG_KEY)).wordCount).toBe(100);
   });
+  it("accepts only passage seeds in [0, 1)", () => {
+    expect(validateConfig({ seed: 0.25 }).seed).toBe(0.25);
+    for (const seed of [1, -0.1, NaN, Infinity, "0.5", null])
+      expect(validateConfig({ seed }).seed).toBe(defaultConfig.seed);
+  });
+  it("stores compact samples so 200 results stay well under quota", () => {
+    const e = new TypingEngine(defaultConfig, "hello world");
+    e.update("h", 0);
+    for (let t = 1; t <= 30; t++) e.tick(t * 1000 + 0.333);
+    const result = e.result("compact", new Date().toISOString());
+    for (const s of result.samples)
+      for (const v of [s.second, s.wpm, s.raw, s.windowWpm])
+        expect(Math.round(v * 100) / 100).toBe(v);
+    const bytes = JSON.stringify(Array(200).fill(result)).length;
+    expect(bytes).toBeLessThan(2_000_000);
+  });
   it("saves completed results, deduplicates, and reloads history", () => {
     const e = new TypingEngine({ ...defaultConfig, source: "quote" }, "hi");
     e.update("h", 0);

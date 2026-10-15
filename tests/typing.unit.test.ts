@@ -7,9 +7,13 @@ import {
 import {
   cleanCustomText,
   generateText,
+  nextSeed,
+  selectQuote,
   validateCustomText,
 } from "../src/lib/textGenerator";
 import { defaultConfig } from "../src/lib/storage";
+import { createId } from "../src/lib/id";
+import { quotes } from "../src/data/passages";
 const words = {
   ...defaultConfig,
   mode: "words" as const,
@@ -64,16 +68,51 @@ describe("Typing state machine", () => {
     expect(e.state.input).toBe("hello world");
     expect(e.state.elapsed).toBe(2000);
   });
-  it("allows traversal with errors and freezes completed scores", () => {
+  it("waits at a wrong final character, then submits on space with the error", () => {
     const e = new TypingEngine(words, "hi");
     e.update("h", 0);
     e.update("hx", 1000);
+    expect(e.state.status).toBe("running");
+    expect(e.awaitingSubmit).toBe(true);
+    e.update("hx ", 1500);
     expect(e.state.status).toBe("completed");
     expect(e.state.accuracy).toBe(50);
+    expect(e.state.input).toBe("hx");
+    expect(e.state.elapsed).toBe(1500);
     const completed = e.state;
     e.update("hi", 2000);
     e.tick(50000);
     expect(e.state).toBe(completed);
+  });
+  it("lets a wrong final character be corrected before finishing", () => {
+    const e = new TypingEngine(words, "hi");
+    e.update("h", 0);
+    e.update("hx", 500);
+    e.update("h", 800);
+    expect(e.awaitingSubmit).toBe(false);
+    e.update("hi", 1000);
+    expect(e.state.status).toBe("completed");
+    expect(e.state.accuracy).toBe(100);
+    expect(e.state.errors).toBe(1);
+    expect(e.state.correctedErrors).toBe(1);
+  });
+  it("ignores keystrokes beyond the end that are not a word boundary", () => {
+    const e = new TypingEngine(words, "hi");
+    e.update("h", 0);
+    e.update("hx", 500);
+    e.update("hxz", 700);
+    expect(e.state.status).toBe("running");
+    expect(e.state.input).toBe("hx");
+    expect(e.state.errors).toBe(1);
+  });
+  it("raw WPM counts mismatches, net counts only correct characters", () => {
+    const e = new TypingEngine(words, "abcde abcde");
+    e.update("a", 0);
+    e.update("abXde abcd", 30000);
+    e.tick(60000);
+    expect(e.state.rawWpm).toBeCloseTo(2);
+    expect(e.state.wpm).toBeCloseTo(1.8);
+    expect(e.state.accuracy).toBe(90);
   });
   it("uses the deadline and rejects input exactly as a timed test expires", () => {
     const e = new TypingEngine(
@@ -180,5 +219,47 @@ describe("Metrics and passages", () => {
     expect(validateCustomText("hello")).toBeNull();
     expect(validateCustomText("a".repeat(10001))).not.toBeNull();
     expect(cleanCustomText("  hi  there\r\nworld  ")).toBe("hi  there\nworld");
+  });
+  it("is deterministic per seed so the Words preview matches Practice", () => {
+    const a = { ...words, seed: 0.42 };
+    expect(generateText(a)).toBe(generateText({ ...a }));
+    expect(generateText(a)).toBe(generateText(a, 0.42));
+  });
+  it("next passage and next quote always differ from the current one", () => {
+    for (const seed of [0, 0.3, 0.7, 0.999]) {
+      const passage = { ...words, seed };
+      expect(generateText({ ...passage, seed: nextSeed(passage) })).not.toBe(
+        generateText(passage),
+      );
+      const quote = { ...passage, source: "quote" as const };
+      expect(selectQuote(nextSeed(quote))).not.toBe(selectQuote(seed));
+    }
+    // Stepping visits every quote before repeating.
+    let c = { ...words, source: "quote" as const, seed: 0 };
+    const seen = new Set<string>();
+    for (let i = 0; i < quotes.length; i++) {
+      seen.add(selectQuote(c.seed).text);
+      c = { ...c, seed: nextSeed(c) };
+    }
+    expect(seen.size).toBe(quotes.length);
+  });
+  it("creates RFC 4122 v4 ids even without crypto.randomUUID", () => {
+    const pattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    expect(createId()).toMatch(pattern);
+    const original = globalThis.crypto;
+    Object.defineProperty(globalThis, "crypto", {
+      value: { getRandomValues: original.getRandomValues.bind(original) },
+      configurable: true,
+    });
+    try {
+      const ids = new Set(Array.from({ length: 50 }, createId));
+      expect(ids.size).toBe(50);
+      for (const id of ids) expect(id).toMatch(pattern);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", {
+        value: original,
+        configurable: true,
+      });
+    }
   });
 });
